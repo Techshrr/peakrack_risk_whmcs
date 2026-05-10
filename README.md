@@ -30,7 +30,7 @@ The addon uses WHMCS `Capsule`, `localAPI`, addon module lifecycle functions, an
 
 ## Installation
 
-1. Upload the module directory to your WHMCS installation:
+1. Upload the `peakrack_risk` directory to your WHMCS installation:
 
    ```text
    modules/addons/peakrack_risk
@@ -131,7 +131,7 @@ Tables are not removed on deactivation so audit history and decision records are
 ## Project Structure
 
 ```text
-modules/addons/peakrack_risk/
+peakrack_risk/
   peakrack_risk.php       Addon entrypoint, activation, admin page, table creation
   hooks.php               WHMCS hook registration
   README.md               Module documentation
@@ -154,7 +154,7 @@ modules/addons/peakrack_risk/
 Run PHP syntax checks before packaging:
 
 ```powershell
-Get-ChildItem -Path modules\addons\peakrack_risk -Recurse -Filter *.php | ForEach-Object { php -l $_.FullName }
+Get-ChildItem -Path peakrack_risk -Recurse -Filter *.php | ForEach-Object { php -l $_.FullName }
 ```
 
 Expected result: no syntax errors.
