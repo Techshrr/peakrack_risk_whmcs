@@ -1,8 +1,10 @@
 # PeakRack Risk for WHMCS
 
-PeakRack Risk is a WHMCS addon module for order risk review and checkout acknowledgement.
-It packages post-fraud-check scoring, configurable review rules, checkout security notices,
-and audit logging into a managed WHMCS addon.
+[English](README.md) | [简体中文](README.zh-CN.md)
+
+PeakRack Risk is a WHMCS addon module for checkout risk scoring, fraud review automation, checkout acknowledgement, and audit logging.
+
+It converts the original standalone checkout and fraud-check hooks into a managed WHMCS addon with an admin configuration page, bilingual interface text, editable checkout notice content, and persistent decision records.
 
 ## Features
 
@@ -12,28 +14,29 @@ and audit logging into a managed WHMCS addon.
 - Optionally marks high-risk orders as `Fraud` when automatic fraud action is enabled.
 - Shows a checkout acknowledgement notice before order submission.
 - Supports server-side checkout acknowledgement validation with nonce protection.
-- Provides editable Chinese and English checkout notice copy.
-- Includes English and Chinese admin UI labels.
+- Allows checkout notice text to be edited from the addon admin page.
+- Supports Chinese and English checkout notice content.
+- Supports Chinese and English addon admin labels.
 - Stores decision history, audit logs, and rule version snapshots.
-- Keeps audit data when the addon is deactivated.
+- Preserves audit and decision data when the addon is deactivated.
 
 ## Compatibility
 
 - WHMCS 9.x
 - PHP 8.3
-- MySQL/MariaDB supported by WHMCS
+- MySQL or MariaDB supported by WHMCS
 
-The module uses WHMCS `Capsule`, `localAPI`, addon module lifecycle functions, and standard hook registration.
+The addon uses WHMCS `Capsule`, `localAPI`, addon module lifecycle functions, and standard hook registration.
 
 ## Installation
 
-1. Upload this folder to your WHMCS installation:
+1. Upload the module directory to your WHMCS installation:
 
    ```text
    modules/addons/peakrack_risk
    ```
 
-2. In the WHMCS admin area, go to:
+2. In the WHMCS admin area, open:
 
    ```text
    System Settings > Addon Modules
@@ -158,4 +161,8 @@ Expected result: no syntax errors.
 
 ## License
 
-No license has been specified yet. Add a license before publishing if this repository will be public.
+This project uses a custom source-available license.
+
+You may download, inspect, modify, and use this software for your own WHMCS installations or internal business use. You may not sell, resell, repackage, redistribute, publish modified copies as a competing product, or remove/rebrand the original project attribution.
+
+See [LICENSE](LICENSE) for the full terms.

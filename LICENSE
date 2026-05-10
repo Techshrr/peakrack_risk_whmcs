@@ -1,0 +1,56 @@
+PeakRack Risk Source-Available License
+
+Copyright (c) 2026 Techshrr
+
+This license applies to the PeakRack Risk for WHMCS project and its source code,
+documentation, configuration examples, and related files.
+
+1. Permitted Use
+
+You may download, inspect, copy, modify, and use this software for your own WHMCS
+installations, your own internal business operations, or private evaluation.
+
+You may make internal modifications for deployment, security review,
+compatibility, or operational requirements.
+
+2. Restrictions
+
+You may not:
+
+- Sell, rent, lease, sublicense, or otherwise commercialize this software as a
+  standalone product or service.
+- Resell, repackage, bundle, or redistribute this software, whether modified or
+  unmodified.
+- Publish modified versions as a competing product, forked product, replacement
+  product, or rebranded product.
+- Remove, obscure, or replace the original project name, copyright notice,
+  license notice, or attribution.
+- Use the project name, author name, or repository identity to imply endorsement
+  of any modified or third-party version.
+
+3. Internal Deployment
+
+You may deploy modified copies for your own WHMCS systems or internal business
+use, provided that the software is not offered, sold, redistributed, or made
+available as a separate product to third parties.
+
+4. Contributions
+
+Unless otherwise agreed in writing, contributions submitted to this project may
+be incorporated into the project under this same license.
+
+5. No Warranty
+
+This software is provided "as is", without warranty of any kind, express or
+implied, including but not limited to warranties of merchantability, fitness for
+a particular purpose, and non-infringement.
+
+The authors and copyright holders are not liable for any claim, damages, data
+loss, service interruption, business loss, or other liability arising from the
+use of this software.
+
+6. Separate Permission
+
+Commercial redistribution, resale, white-label use, hosted resale, marketplace
+publication, or any use outside the permissions above requires prior written
+permission from the copyright holder.
