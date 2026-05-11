@@ -84,11 +84,26 @@ if (!function_exists('peakrackCheckoutScript')) {
         return;
     }
 
+    if (window.__peakrackRiskCheckoutBooted) {
+        return;
+    }
+    window.__peakrackRiskCheckoutBooted = true;
+
+    function isCheckoutForm(form) {
+        if (!form || String(form.tagName).toLowerCase() !== 'form') {
+            return false;
+        }
+
+        var action = (form.getAttribute('action') || '').toLowerCase();
+        var targetsCart = action === '' || action.indexOf('cart.php') !== -1 || action.indexOf('a=checkout') !== -1;
+        var hasCheckoutAction = Boolean(form.querySelector('input[name="a"][value="checkout"]'));
+        var hasCheckoutFields = Boolean(form.querySelector('[name="paymentmethod"], [name="ccinfo"], [name="accepttos"], [name="custtype"]'));
+
+        return (targetsCart || hasCheckoutAction) && hasCheckoutFields;
+    }
+
     function findCheckoutForms() {
-        return Array.prototype.slice.call(document.querySelectorAll('form')).filter(function (form) {
-            var action = (form.getAttribute('action') || '').toLowerCase();
-            return action.indexOf('cart.php') !== -1 && form.querySelector('[name="paymentmethod"], [name="ccinfo"], [name="accepttos"]');
-        });
+        return Array.prototype.slice.call(document.querySelectorAll('form')).filter(isCheckoutForm);
     }
 
     function fieldSelector(name) {
@@ -109,8 +124,9 @@ if (!function_exists('peakrackCheckoutScript')) {
         existing.value = value;
     }
 
-    function ensureAckFields() {
-        findCheckoutForms().forEach(function (form) {
+    function ensureAckFields(targetForm) {
+        var forms = targetForm ? [targetForm] : findCheckoutForms();
+        forms.forEach(function (form) {
             ensureHiddenField(form, config.fieldName, config.fieldValue);
             ensureHiddenField(form, config.nonceFieldName, config.nonceValue);
         });
@@ -118,7 +134,7 @@ if (!function_exists('peakrackCheckoutScript')) {
 
     function hasAcknowledged() {
         try {
-            return window.sessionStorage.getItem(config.storageKey) === config.fieldValue;
+            return window.sessionStorage.getItem(config.storageKey) === config.nonceValue;
         } catch (e) {
             return false;
         }
@@ -126,7 +142,7 @@ if (!function_exists('peakrackCheckoutScript')) {
 
     function setAcknowledged() {
         try {
-            window.sessionStorage.setItem(config.storageKey, config.fieldValue);
+            window.sessionStorage.setItem(config.storageKey, config.nonceValue);
         } catch (e) {}
         ensureAckFields();
     }
@@ -174,11 +190,15 @@ if (!function_exists('peakrackCheckoutScript')) {
             return;
         }
 
+        if (document.getElementById('prk-checkout-overlay')) {
+            return;
+        }
+
         injectStyles();
 
         var previousOverflow = document.body.style.overflow;
         var previousActive = document.activeElement;
-        var overlay = createElement('div', { className: 'prk-checkout-overlay', role: 'presentation' });
+        var overlay = createElement('div', { className: 'prk-checkout-overlay', id: 'prk-checkout-overlay', role: 'presentation' });
         var dialog = createElement('div', {
             className: 'prk-checkout-dialog',
             role: 'dialog',
@@ -230,21 +250,34 @@ if (!function_exists('peakrackCheckoutScript')) {
         });
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
+    function boot() {
         if (hasAcknowledged()) {
             ensureAckFields();
         }
 
-        findCheckoutForms().forEach(function (form) {
-            form.addEventListener('submit', function () {
+        document.addEventListener('submit', function (event) {
+            if (isCheckoutForm(event.target) && hasAcknowledged()) {
+                ensureAckFields(event.target);
+            }
+        }, true);
+
+        if (window.MutationObserver && document.body) {
+            var observer = new MutationObserver(function () {
                 if (hasAcknowledged()) {
                     ensureAckFields();
                 }
             });
-        });
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
 
         showDialog();
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+    } else {
+        boot();
+    }
 })();
 </script>
 HTML;
