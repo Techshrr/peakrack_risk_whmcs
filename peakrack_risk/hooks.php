@@ -12,10 +12,14 @@ require_once __DIR__ . '/lib/Bootstrap.php';
 require_once __DIR__ . '/lib/RiskEngine.php';
 require_once __DIR__ . '/lib/Checkout.php';
 
+if (is_file(__DIR__ . '/lib/CommercialLicense.php')) {
+    require_once __DIR__ . '/lib/CommercialLicense.php';
+}
+
 add_hook('ClientAreaFooterOutput', 1, static function (array $vars): string {
     $config = peakrackRiskLoadSettings();
 
-    if (!$config['enabled'] || !$config['checkoutEnabled'] || !peakrackCheckoutIsCheckoutPage($vars)) {
+    if (!peakrackRiskCommercialLicenseAllowsRuntime($config) || !$config['enabled'] || !$config['checkoutEnabled'] || !peakrackCheckoutIsCheckoutPage($vars)) {
         return '';
     }
 
@@ -25,7 +29,7 @@ add_hook('ClientAreaFooterOutput', 1, static function (array $vars): string {
 add_hook('ShoppingCartValidateCheckout', 1, static function (array $vars): array {
     $config = peakrackRiskLoadSettings();
 
-    if (!$config['enabled'] || !$config['checkoutEnabled'] || !$config['checkoutServerValidation']) {
+    if (!peakrackRiskCommercialLicenseAllowsRuntime($config) || !$config['enabled'] || !$config['checkoutEnabled'] || !$config['checkoutServerValidation']) {
         return [];
     }
 
@@ -64,6 +68,11 @@ add_hook('DailyCronJob', 1, static function (array $vars): void {
 });
 
 add_hook('AdminAreaFooterOutput', 1, static function (array $vars): string {
+    $config = peakrackRiskLoadSettings();
+    if (!peakrackRiskCommercialLicenseAllowsRuntime($config)) {
+        return '';
+    }
+
     $filename = strtolower((string) ($vars['filename'] ?? ''));
     $action = strtolower((string) ($_GET['action'] ?? ''));
     $orderId = (int) ($_GET['id'] ?? ($_GET['orderid'] ?? 0));
@@ -77,7 +86,7 @@ add_hook('AdminAreaFooterOutput', 1, static function (array $vars): string {
 
 add_hook('AfterFraudCheck', 1, static function (array $vars): void {
     $config = peakrackRiskLoadSettings();
-    if (!$config['enabled']) {
+    if (!peakrackRiskCommercialLicenseAllowsRuntime($config) || !$config['enabled']) {
         return;
     }
 

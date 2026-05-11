@@ -17,6 +17,10 @@ require_once __DIR__ . '/lib/AdminLang.php';
 require_once __DIR__ . '/lib/RiskEngine.php';
 require_once __DIR__ . '/lib/Checkout.php';
 
+if (is_file(__DIR__ . '/lib/CommercialLicense.php')) {
+    require_once __DIR__ . '/lib/CommercialLicense.php';
+}
+
 function peakrack_risk_config(): array
 {
     return [
@@ -94,6 +98,11 @@ function peakrack_risk_output(array $vars): void
             peakrackRiskSaveSettings($settings, (int) ($_SESSION['adminid'] ?? 0));
             $settings = peakrackRiskLoadSettings();
             $language = peakrackRiskAdminLanguage($settings);
+            if (peakrackRiskCommercialBuildAvailable()) {
+                $license = peakrackRiskCheckCommercialLicense($settings, true);
+                peakrackRiskPersistCommercialLicenseResult($settings, $license);
+                $settings = peakrackRiskLoadSettings();
+            }
             $message = peakrackRiskAdminText($language, 'saved');
         } elseif (($_POST['prk_action'] ?? '') === 'import_settings') {
             $importResult = peakrack_risk_import_settings_from_post($settings);
@@ -113,6 +122,13 @@ function peakrack_risk_output(array $vars): void
 
 function peakrack_risk_handle_manual_order_action(array $settings): array
 {
+    if (!peakrackRiskCommercialLicenseAllowsRuntime($settings)) {
+        return [
+            'success' => false,
+            'message' => peakrackRiskAdminText(peakrackRiskAdminLanguage($settings), 'license_runtime_blocked'),
+        ];
+    }
+
     $orderId = (int) ($_POST['manualOrderId'] ?? 0);
     $mode = (string) ($_POST['manualAction'] ?? 'score_only');
     $mode = in_array($mode, array_keys(peakrack_risk_manual_action_options('en')), true) ? $mode : 'score_only';
@@ -170,6 +186,11 @@ function peakrack_risk_import_settings_from_post(array $current): array
     $settings = peakrackRiskMergeSettings(peakrackRiskDefaults(), $decoded);
     peakrackRiskSaveSettings($settings, (int) ($_SESSION['adminid'] ?? 0));
     $settings = peakrackRiskLoadSettings();
+    if (peakrackRiskCommercialBuildAvailable()) {
+        $license = peakrackRiskCheckCommercialLicense($settings, true);
+        peakrackRiskPersistCommercialLicenseResult($settings, $license);
+        $settings = peakrackRiskLoadSettings();
+    }
 
     return [
         'success' => true,
@@ -345,6 +366,14 @@ function peakrack_risk_admin_token_field(): string
 function peakrack_risk_settings_from_post(array $current): array
 {
     $settings = $current;
+    $oldLicenseKey = (string) ($current['licenseKey'] ?? '');
+    $settings['licenseKey'] = peakrackRiskLimitText(trim((string) ($_POST['licenseKey'] ?? $oldLicenseKey)), 120);
+    if (!hash_equals($oldLicenseKey, $settings['licenseKey'])) {
+        $settings['licenseLocalKey'] = '';
+        $settings['licenseStatus'] = '';
+        $settings['licenseMessage'] = '';
+        $settings['licenseCheckedAt'] = '';
+    }
     $settings['enabled'] = peakrackRiskBool($_POST['enabled'] ?? false);
     $settings['checkoutEnabled'] = peakrackRiskBool($_POST['checkoutEnabled'] ?? false);
     $settings['checkoutServerValidation'] = peakrackRiskBool($_POST['checkoutServerValidation'] ?? false);
@@ -424,6 +453,7 @@ function peakrack_risk_render_admin(array $settings, string $message, string $me
     $recentLogs = peakrack_risk_recent_rows('mod_peakrack_risk_audit_logs', 'created_at', 100);
     $metrics = peakrack_risk_decision_metrics();
     $diagnostics = peakrack_risk_diagnostics($settings);
+    $license = peakrackRiskCheckCommercialLicense($settings);
     $exportJson = json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     $exportJson = is_string($exportJson) ? $exportJson : '{}';
     $token = peakrack_risk_admin_token_field();
@@ -555,6 +585,26 @@ function peakrack_risk_render_admin(array $settings, string $message, string $me
             <?php echo $token; ?>
             <input type="hidden" name="prk_action" value="save_settings">
             <input type="hidden" name="adminLanguage" value="<?php echo peakrack_risk_e($language); ?>">
+
+            <?php if (peakrackRiskCommercialBuildAvailable()): ?>
+                <div class="prk-card">
+                    <div class="prk-card-head">
+                        <div>
+                            <h3 class="prk-card-title"><?php echo peakrack_risk_e($t('license_settings')); ?></h3>
+                            <p class="prk-card-desc"><?php echo peakrack_risk_e($t('license_settings_desc')); ?></p>
+                        </div>
+                        <div><?php echo peakrack_risk_license_badge($license, $language); ?></div>
+                    </div>
+                    <div class="prk-card-body prk-form-grid">
+                        <?php echo peakrack_risk_text('licenseKey', $t('license_key'), $settings['licenseKey'] ?? ''); ?>
+                        <div class="prk-field">
+                            <label><?php echo peakrack_risk_e($t('license_status')); ?></label>
+                            <p class="prk-help" style="margin-top:0"><?php echo peakrack_risk_e(peakrackRiskCommercialLicenseStatusMessage($license)); ?></p>
+                            <p class="prk-help"><?php echo peakrack_risk_e($t('license_checked_at')); ?>: <?php echo peakrack_risk_e($settings['licenseCheckedAt'] ?? '-'); ?></p>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <div class="prk-card">
                 <div class="prk-card-head">
@@ -1013,6 +1063,19 @@ function peakrack_risk_status_badge(string $label, string $color): string
     $allowed = ['green', 'blue', 'amber', 'red', 'gray'];
     $color = in_array($color, $allowed, true) ? $color : 'gray';
     return '<span class="prk-badge prk-badge-' . peakrack_risk_e($color) . '">' . peakrack_risk_e($label) . '</span>';
+}
+
+function peakrack_risk_license_badge(array $license, string $language): string
+{
+    $status = (string) ($license['status'] ?? 'Invalid');
+    $color = match ($status) {
+        'Active' => 'green',
+        'Suspended', 'Expired' => 'amber',
+        default => 'red',
+    };
+
+    $label = $status !== '' ? $status : peakrackRiskAdminText($language, 'license_unknown');
+    return peakrack_risk_status_badge($label, $color);
 }
 
 function peakrack_risk_score_badge(float $score): string
