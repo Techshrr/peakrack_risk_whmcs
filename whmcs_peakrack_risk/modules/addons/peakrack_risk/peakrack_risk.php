@@ -22,7 +22,7 @@ function peakrack_risk_config(): array
     return [
         'name' => 'PeakRack Risk',
         'description' => 'Professional order risk review and checkout acknowledgement module for PeakRack.',
-        'version' => '1.2.1',
+        'version' => '1.2.2',
         'author' => 'PeakRack',
         'language' => 'english',
         'fields' => [],

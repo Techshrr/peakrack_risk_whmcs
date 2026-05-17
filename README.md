@@ -33,12 +33,31 @@ and audit logging into a managed WHMCS addon.
 
 The module uses WHMCS `Capsule`, `localAPI`, addon module lifecycle functions, and standard hook registration.
 
+## Package Layout
+
+The repository keeps documentation at the root and deployable files inside the `whmcs_peakrack_risk` package directory:
+
+```text
+whmcs_peakrack_risk/
+  modules/
+    addons/
+      peakrack_risk/
+```
+
+Upload or copy the `modules` directory inside `whmcs_peakrack_risk` to the root of your WHMCS installation. Do not upload the wrapper directory itself into the WHMCS root.
+
 ## Installation
 
-1. Upload this `peakrack_risk` folder to your WHMCS installation:
+1. From this repository, upload:
 
    ```text
-   modules/addons/peakrack_risk
+   whmcs_peakrack_risk/modules
+   ```
+
+   to your WHMCS root directory. The final addon path should be:
+
+   ```text
+   modules/addons/peakrack_risk/
    ```
 
 2. In the WHMCS admin area, go to:

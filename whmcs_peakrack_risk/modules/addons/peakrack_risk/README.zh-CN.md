@@ -212,4 +212,4 @@ Get-ChildItem -Path peakrack_risk -Recurse -Filter *.php | ForEach-Object { php 
 
 ## 许可协议
 
-MIT License。完整条款见仓库根目录 [LICENSE](../LICENSE)。
+MIT License。完整条款见仓库根目录 [LICENSE](../../../../LICENSE)。

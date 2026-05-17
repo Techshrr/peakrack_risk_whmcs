@@ -1,5 +1,12 @@
 # PeakRack Risk Upgrade Notes
 
+## 1.2.2
+
+- Repository layout only: deployable files now live under `whmcs_peakrack_risk/modules`.
+- Existing WHMCS installs do not need database changes for this release.
+- When updating manually, copy the new `whmcs_peakrack_risk/modules` directory contents over your WHMCS root.
+- Addon version bumped to `1.2.2`.
+
 ## 1.2.1
 
 - Removed the optional commercial license gate for the open-source release.
