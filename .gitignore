@@ -1,3 +1,5 @@
-/commercial/
-/dist-commercial/
-/peakrack_risk/lib/CommercialLicense.php
+.DS_Store
+Thumbs.db
+*.log
+*.zip
+vendor/

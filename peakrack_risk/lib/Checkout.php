@@ -22,9 +22,76 @@ if (!function_exists('peakrackCheckoutIsChinese')) {
     }
 }
 
-if (!function_exists('peakrackCheckoutNonce')) {
-    function peakrackCheckoutNonce(): string
+if (!function_exists('peakrackCheckoutClientId')) {
+    function peakrackCheckoutClientId(array $vars = []): int
     {
+        $clientDetails = $vars['clientsdetails'] ?? ($vars['clientdetails'] ?? []);
+        if (is_array($clientDetails)) {
+            foreach (['userid', 'id', 'client_id'] as $key) {
+                if (!empty($clientDetails[$key])) {
+                    return max(0, (int) $clientDetails[$key]);
+                }
+            }
+        }
+
+        return max(0, (int) ($_SESSION['uid'] ?? 0));
+    }
+}
+
+if (!function_exists('peakrackCheckoutClientIp')) {
+    function peakrackCheckoutClientIp(): string
+    {
+        foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'] as $key) {
+            $ip = trim((string) ($_SERVER[$key] ?? ''));
+            if ($ip !== '') {
+                return $ip;
+            }
+        }
+
+        $forwardedFor = trim((string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''));
+        if ($forwardedFor !== '') {
+            return trim(explode(',', $forwardedFor)[0]);
+        }
+
+        return 'unknown';
+    }
+}
+
+if (!function_exists('peakrackCheckoutScope')) {
+    function peakrackCheckoutScope(array $vars = []): string
+    {
+        return hash('sha256', implode('|', [
+            session_id(),
+            peakrackCheckoutClientId($vars),
+            peakrackCheckoutClientIp(),
+        ]));
+    }
+}
+
+if (!function_exists('peakrackCheckoutEnsureScope')) {
+    function peakrackCheckoutEnsureScope(array $vars = []): string
+    {
+        $scope = peakrackCheckoutScope($vars);
+        $storedScope = (string) ($_SESSION['peakrack_risk_checkout_scope'] ?? '');
+
+        if (!hash_equals($scope, $storedScope)) {
+            $_SESSION['peakrack_risk_checkout_scope'] = $scope;
+            unset(
+                $_SESSION['peakrack_risk_checkout_nonce'],
+                $_SESSION['peakrack_risk_checkout_acknowledged'],
+                $_SESSION['peakrack_risk_checkout_acknowledged_at']
+            );
+        }
+
+        return $scope;
+    }
+}
+
+if (!function_exists('peakrackCheckoutNonce')) {
+    function peakrackCheckoutNonce(array $vars = []): string
+    {
+        peakrackCheckoutEnsureScope($vars);
+
         if (!empty($_SESSION['peakrack_risk_checkout_nonce']) && is_string($_SESSION['peakrack_risk_checkout_nonce'])) {
             return $_SESSION['peakrack_risk_checkout_nonce'];
         }
@@ -37,6 +104,31 @@ if (!function_exists('peakrackCheckoutNonce')) {
 
         $_SESSION['peakrack_risk_checkout_nonce'] = $nonce;
         return $nonce;
+    }
+}
+
+if (!function_exists('peakrackCheckoutIsSessionAcknowledged')) {
+    function peakrackCheckoutIsSessionAcknowledged(array $vars = []): bool
+    {
+        peakrackCheckoutEnsureScope($vars);
+        return !empty($_SESSION['peakrack_risk_checkout_acknowledged']);
+    }
+}
+
+if (!function_exists('peakrackCheckoutMarkSessionAcknowledged')) {
+    function peakrackCheckoutMarkSessionAcknowledged(array $vars = []): void
+    {
+        peakrackCheckoutEnsureScope($vars);
+        $_SESSION['peakrack_risk_checkout_acknowledged'] = true;
+        $_SESSION['peakrack_risk_checkout_acknowledged_at'] = time();
+    }
+}
+
+if (!function_exists('peakrackCheckoutStorageKey')) {
+    function peakrackCheckoutStorageKey(array $config, array $vars = []): string
+    {
+        $baseKey = (string) ($config['checkout']['storageKey'] ?? 'prk_checkout_ack_v2');
+        return $baseKey . ':' . substr(peakrackCheckoutScope($vars), 0, 16);
     }
 }
 
@@ -63,12 +155,14 @@ if (!function_exists('peakrackCheckoutScript')) {
     function peakrackCheckoutScript(array $config, array $vars): string
     {
         $checkout = $config['checkout'];
+        $nonce = peakrackCheckoutNonce($vars);
         $payload = [
             'fieldName' => $checkout['fieldName'],
             'fieldValue' => $checkout['fieldValue'],
             'nonceFieldName' => $checkout['nonceFieldName'],
-            'nonceValue' => peakrackCheckoutNonce(),
-            'storageKey' => $checkout['storageKey'],
+            'nonceValue' => $nonce,
+            'storageKey' => peakrackCheckoutStorageKey($config, $vars),
+            'acknowledged' => peakrackCheckoutIsSessionAcknowledged($vars),
             'messages' => peakrackCheckoutMessages($config, peakrackCheckoutIsChinese($vars)),
         ];
 
@@ -133,16 +227,21 @@ if (!function_exists('peakrackCheckoutScript')) {
     }
 
     function hasAcknowledged() {
+        if (config.acknowledged === true) {
+            return true;
+        }
+
         try {
-            return window.sessionStorage.getItem(config.storageKey) === config.nonceValue;
+            return window.sessionStorage.getItem(config.storageKey) === '1';
         } catch (e) {
             return false;
         }
     }
 
     function setAcknowledged() {
+        config.acknowledged = true;
         try {
-            window.sessionStorage.setItem(config.storageKey, config.nonceValue);
+            window.sessionStorage.setItem(config.storageKey, '1');
         } catch (e) {}
         ensureAckFields();
     }

@@ -1,5 +1,11 @@
 # PeakRack Risk Upgrade Notes
 
+## 1.2.1
+
+- Removed the optional commercial license gate for the open-source release.
+- Kept the checkout acknowledgement optimization so the same client session and IP does not see the checkout notice repeatedly after acknowledging it.
+- Addon version bumped to `1.2.1`.
+
 ## 1.2.0
 
 Operations and scaling release for WHMCS 9.x / PHP 8.3.

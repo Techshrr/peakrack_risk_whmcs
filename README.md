@@ -1,10 +1,8 @@
 # PeakRack Risk for WHMCS
 
-[English](README.md) | [简体中文](README.zh-CN.md)
-
-PeakRack Risk is a WHMCS addon module for checkout risk scoring, fraud review automation, checkout acknowledgement, and audit logging.
-
-It converts the original standalone checkout and fraud-check hooks into a managed WHMCS addon with an admin configuration page, bilingual interface text, editable checkout notice content, and persistent decision records.
+PeakRack Risk is a WHMCS addon module for order risk review and checkout acknowledgement.
+It packages post-fraud-check scoring, configurable review rules, checkout security notices,
+and audit logging into a managed WHMCS addon.
 
 ## Features
 
@@ -14,9 +12,8 @@ It converts the original standalone checkout and fraud-check hooks into a manage
 - Optionally marks high-risk orders as `Fraud` when automatic fraud action is enabled.
 - Shows a checkout acknowledgement notice before order submission.
 - Supports server-side checkout acknowledgement validation with nonce protection.
-- Allows checkout notice text to be edited from the addon admin page.
-- Supports Chinese and English checkout notice content.
-- Supports Chinese and English addon admin labels.
+- Provides editable Chinese and English checkout notice copy.
+- Includes English and Chinese admin UI labels.
 - Stores decision history, audit logs, and rule version snapshots.
 - Prunes old audit logs and rule snapshots during the WHMCS daily cron.
 - Controls how much audit data is mirrored into WHMCS Activity Log.
@@ -26,25 +23,25 @@ It converts the original standalone checkout and fraud-check hooks into a manage
 - Provides diagnostics for schema, hook activity, rule version, and WHMCS helper availability.
 - Supports JSON settings import/export.
 - Skips repeated automatic order actions when the same rule version already processed the order.
-- Preserves audit and decision data when the addon is deactivated.
+- Keeps audit data when the addon is deactivated.
 
 ## Compatibility
 
 - WHMCS 9.x
 - PHP 8.3
-- MySQL or MariaDB supported by WHMCS
+- MySQL/MariaDB supported by WHMCS
 
-The addon uses WHMCS `Capsule`, `localAPI`, addon module lifecycle functions, and standard hook registration.
+The module uses WHMCS `Capsule`, `localAPI`, addon module lifecycle functions, and standard hook registration.
 
 ## Installation
 
-1. Upload the `peakrack_risk` directory to your WHMCS installation:
+1. Upload this `peakrack_risk` folder to your WHMCS installation:
 
    ```text
    modules/addons/peakrack_risk
    ```
 
-2. In the WHMCS admin area, open:
+2. In the WHMCS admin area, go to:
 
    ```text
    System Settings > Addon Modules
@@ -212,8 +209,4 @@ Expected result: no syntax errors.
 
 ## License
 
-This project uses a custom source-available license.
-
-You may download, inspect, modify, and use this software for your own WHMCS installations or internal business use. You may not sell, resell, repackage, redistribute, publish modified copies as a competing product, or remove/rebrand the original project attribution.
-
-See [LICENSE](LICENSE) for the full terms.
+MIT License. See the repository `LICENSE` file for the full terms.

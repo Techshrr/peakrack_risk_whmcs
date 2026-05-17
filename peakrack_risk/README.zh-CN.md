@@ -212,8 +212,4 @@ Get-ChildItem -Path peakrack_risk -Recurse -Filter *.php | ForEach-Object { php 
 
 ## 许可协议
 
-本项目使用自定义源码可见许可协议。
-
-允许下载、查看、修改，并用于你自己的 WHMCS 站点或内部业务场景。禁止出售、转售、重新打包分发、改名发布为竞争产品，或移除/替换原项目署名。
-
-完整条款见 [LICENSE](LICENSE)。
+MIT License。完整条款见仓库根目录 [LICENSE](../LICENSE)。

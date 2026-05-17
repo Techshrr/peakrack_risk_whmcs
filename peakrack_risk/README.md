@@ -209,4 +209,4 @@ Expected result: no syntax errors.
 
 ## License
 
-This project uses a custom source-available license. See the repository `LICENSE` file for the full terms.
+MIT License. See the repository `LICENSE` file for the full terms.

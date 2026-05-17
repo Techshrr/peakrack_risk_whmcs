@@ -16,11 +16,6 @@ if (!function_exists('peakrackRiskDefaults')) {
             'logOnly' => true,
             'autoFraud' => false,
             'adminLanguage' => 'en',
-            'licenseKey' => '',
-            'licenseLocalKey' => '',
-            'licenseStatus' => '',
-            'licenseMessage' => '',
-            'licenseCheckedAt' => '',
             'activityLogMirrorLevel' => 'warning',
             'reviewThreshold' => 30.0,
             'fraudThreshold' => 80.0,
@@ -208,11 +203,6 @@ if (!function_exists('peakrackRiskMergeSettings')) {
         $settings['adminLanguage'] = in_array((string) ($settings['adminLanguage'] ?? 'en'), ['en', 'zh'], true)
             ? (string) $settings['adminLanguage']
             : 'en';
-        $settings['licenseKey'] = peakrackRiskLimitText(trim((string) ($settings['licenseKey'] ?? $defaults['licenseKey'])), 120);
-        $settings['licenseLocalKey'] = is_scalar($settings['licenseLocalKey'] ?? null) ? (string) $settings['licenseLocalKey'] : '';
-        $settings['licenseStatus'] = peakrackRiskLimitText(trim((string) ($settings['licenseStatus'] ?? '')), 40);
-        $settings['licenseMessage'] = peakrackRiskLimitText(trim((string) ($settings['licenseMessage'] ?? '')), 255);
-        $settings['licenseCheckedAt'] = peakrackRiskLimitText(trim((string) ($settings['licenseCheckedAt'] ?? '')), 32);
         $settings['enabled'] = peakrackRiskBool($settings['enabled'] ?? $defaults['enabled']);
         $settings['checkoutEnabled'] = peakrackRiskBool($settings['checkoutEnabled'] ?? $defaults['checkoutEnabled']);
         $settings['checkoutServerValidation'] = peakrackRiskBool($settings['checkoutServerValidation'] ?? $defaults['checkoutServerValidation']);
@@ -301,116 +291,6 @@ if (!function_exists('peakrackRiskSaveSettings')) {
 
         $GLOBALS['peakrackRiskSettingsCache'] = $settings;
         $GLOBALS['peakrackRiskCurrentRuleVersionCache'] = $lastVersion + 1;
-    }
-}
-
-if (!function_exists('peakrackRiskPersistSettingsWithoutRuleVersion')) {
-    function peakrackRiskPersistSettingsWithoutRuleVersion(array $settings): void
-    {
-        $settings = peakrackRiskMergeSettings(peakrackRiskDefaults(), $settings);
-        $json = peakrackRiskJsonEncode($settings);
-
-        Capsule::table('mod_peakrack_risk_settings')->updateOrInsert(
-            ['setting' => 'config'],
-            ['value' => $json, 'updated_at' => date('Y-m-d H:i:s')]
-        );
-
-        $GLOBALS['peakrackRiskSettingsCache'] = $settings;
-    }
-}
-
-if (!function_exists('peakrackRiskCommercialBuildAvailable')) {
-    function peakrackRiskCommercialBuildAvailable(): bool
-    {
-        return function_exists('peakrackRiskCommercialCheckLicense');
-    }
-}
-
-if (!function_exists('peakrackRiskCheckCommercialLicense')) {
-    function peakrackRiskCheckCommercialLicense(array $settings, bool $forceRemote = false): array
-    {
-        if (!peakrackRiskCommercialBuildAvailable()) {
-            return [
-                'status' => 'Active',
-                'description' => 'Public build',
-                'remotecheck' => false,
-            ];
-        }
-
-        $licenseKey = trim((string) ($settings['licenseKey'] ?? ''));
-        if ($licenseKey === '') {
-            return [
-                'status' => 'Invalid',
-                'description' => 'License key is missing',
-                'remotecheck' => false,
-            ];
-        }
-
-        $cacheKey = sha1($licenseKey . '|' . (string) ($settings['licenseLocalKey'] ?? '') . '|' . ($forceRemote ? '1' : '0'));
-        if (!$forceRemote && isset($GLOBALS['peakrackRiskCommercialLicenseCache'][$cacheKey]) && is_array($GLOBALS['peakrackRiskCommercialLicenseCache'][$cacheKey])) {
-            return $GLOBALS['peakrackRiskCommercialLicenseCache'][$cacheKey];
-        }
-
-        $localKey = $forceRemote ? '' : (string) ($settings['licenseLocalKey'] ?? '');
-        try {
-            $license = peakrackRiskCommercialCheckLicense($licenseKey, $localKey);
-        } catch (\Throwable $e) {
-            $license = [
-                'status' => 'Invalid',
-                'description' => $e->getMessage(),
-                'remotecheck' => false,
-            ];
-        }
-
-        $GLOBALS['peakrackRiskCommercialLicenseCache'][$cacheKey] = $license;
-        return $license;
-    }
-}
-
-if (!function_exists('peakrackRiskPersistCommercialLicenseResult')) {
-    function peakrackRiskPersistCommercialLicenseResult(array $settings, array $license): void
-    {
-        if (!peakrackRiskCommercialBuildAvailable()) {
-            return;
-        }
-
-        $settings['licenseStatus'] = peakrackRiskLimitText((string) ($license['status'] ?? 'Invalid'), 40);
-        $settings['licenseMessage'] = peakrackRiskLimitText(function_exists('peakrackRiskCommercialLicenseStatusMessage')
-            ? peakrackRiskCommercialLicenseStatusMessage($license)
-            : (string) ($license['description'] ?? ''), 255);
-        $settings['licenseCheckedAt'] = date('Y-m-d H:i:s');
-
-        if (!empty($license['localkey']) && is_string($license['localkey'])) {
-            $settings['licenseLocalKey'] = $license['localkey'];
-        }
-
-        try {
-            peakrackRiskPersistSettingsWithoutRuleVersion($settings);
-        } catch (\Throwable) {
-            // License cache persistence must not break the admin page or checkout.
-        }
-    }
-}
-
-if (!function_exists('peakrackRiskCommercialLicenseAllowsRuntime')) {
-    function peakrackRiskCommercialLicenseAllowsRuntime(array $settings): bool
-    {
-        if (!peakrackRiskCommercialBuildAvailable()) {
-            return true;
-        }
-
-        $license = peakrackRiskCheckCommercialLicense($settings);
-        if (function_exists('peakrackRiskCommercialLicenseIsActive')) {
-            $active = peakrackRiskCommercialLicenseIsActive($license);
-        } else {
-            $active = (($license['status'] ?? '') === 'Active');
-        }
-
-        if ($active && !empty($license['localkey']) && (string) $license['localkey'] !== (string) ($settings['licenseLocalKey'] ?? '')) {
-            peakrackRiskPersistCommercialLicenseResult($settings, $license);
-        }
-
-        return $active;
     }
 }
 
